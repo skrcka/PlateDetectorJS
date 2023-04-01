@@ -38,18 +38,19 @@ async function detectLicensePlates() {
 	try {
 		const detectedText = await textDetector.detect(imageData);
 
-		// Filter the detected text blocks for potential license plates
-        /*
-		const licensePlates = detectedText.filter((textBlock) => {
-			// Customize this regex pattern according to the format of license plates in your region
-			const licensePlatePattern = /^[A-Za-z]{2,3}\d{2,4}$/;
-			return licensePlatePattern.test(textBlock.rawValue);
-		});
-        */
+        const candidates = detectedText.map((textBlock) => {
+            // [^A-Z0-9] - remove all non-alphanumeric characters
+            const regex = /[^A-Z0-9]/g;
+            return textBlock.rawValue.replace(regex, "");
+        });
+        candidates = candidates.filter((candidate) => {
+            // ^[ABCDEFGHJKLMNPRSTVWXYZ1234567890]{6,8}
+            // is between 6 and 8 characters long and contains only alphanumeric characters
+            const regex = /^[ABCDEFGHJKLMNPRSTVWXYZ1234567890]{6,8}$/;
+            return regex.test(candidate);
+        });
 
-		// Display the results
-        console.log(detectedText);
-		displayResults(detectedText);
+		displayResults(candidates);
 	} catch (error) {
 		console.error("Error detecting text: ", error);
         resultsDiv.innerHTML = error.message || "Error detecting text";
@@ -66,7 +67,7 @@ function displayResults(licensePlates) {
     resultsDiv.appendChild(count);
 	licensePlates.forEach((licensePlate, index) => {
 		const result = document.createElement("div");
-		result.innerHTML = `License Plate ${index + 1}: ${licensePlate.rawValue}`;
+		result.innerHTML = `License Plate ${index + 1}: ${licensePlate}`;
 		resultsDiv.appendChild(result);
 	});
 }
